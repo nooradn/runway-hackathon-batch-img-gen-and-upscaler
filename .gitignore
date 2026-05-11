@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+build/
+dist/
+.python-version
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Environment variables / secrets
+.env
+.env.*
+*.env
+secrets.yml
+credentials.json
+
+# n8n
+.n8n/
+*.credentials.json
+
+# Modal / cloudflare / cloud secrets
+modal-secret-*
+*.pem
+*.key
+*.crt
+
+# Editor / OS files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+tmp/
+
+# Notebook
+.ipynb_checkpoints/

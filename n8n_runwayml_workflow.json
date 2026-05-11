@@ -1,0 +1,1650 @@
+{
+  "name": "runwayml_hackathon",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "=https://api.dev.runwayml.com/v1/tasks/{{ $json.task_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_RUNWAY_API_KEY"
+            },
+            {
+              "name": "X-Runway-Version",
+              "value": "2024-11-06"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        96
+      ],
+      "id": "80728bd9-6551-49f4-9164-dfd2d3238916",
+      "name": "get_output"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=whenever the user is chat, your task is generate 5 image generation prompts based on user input. output only json."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        112,
+        -416
+      ],
+      "id": "daaab262-382b-4924-8f43-2d9f98e81dcd",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.dev.runwayml.com/v1/text_to_image",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_RUNWAY_API_KEY"
+            },
+            {
+              "name": "X-Runway-Version",
+              "value": "2024-11-06"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"promptText\": {{ $json['output.prompts'].toJsonString() }},\n  \"ratio\": \"1344:768\",\n  \"model\": \"gemini_2.5_flash\",\n  \"seed\": {{ $today.toMillis()}} \n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        912,
+        -416
+      ],
+      "id": "1ce4ef0c-610d-4041-98ce-2e2d560d7299",
+      "name": "request_runway"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1072,
+        96
+      ],
+      "id": "7779ba32-7758-48a5-b1fd-05d2d9596abb",
+      "name": "download_media"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        848,
+        96
+      ],
+      "id": "0f94ad14-9060-469f-ac89-5960ceacbb7b",
+      "name": "split_urls"
+    },
+    {
+      "parameters": {
+        "url": "https://YOUR_MODAL_DEPLOYMENT_URL.modal.run",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -16,
+        736
+      ],
+      "id": "d232a2fb-c38e-4650-b955-e9d4a83f14be",
+      "name": "trigger_modal"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1b01e6c9-f78f-4c11-a065-881a430e0aec",
+              "name": "chatInput",
+              "value": "flowers",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        -272
+      ],
+      "id": "75544921-b4be-45d3-afa9-468f7fceda82",
+      "name": "manual_text"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "86e0c89b-da2a-49fe-801c-7a42205b8831",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        192,
+        -768
+      ],
+      "id": "def36882-176d-4f88-a25e-e9f5b2ab2da8",
+      "name": "if_exist"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "options": {
+          "filterName": "runwayml_batch_database"
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -32,
+        -768
+      ],
+      "id": "ed84f747-de85-4ac3-8eda-5b4bea8bd59f",
+      "name": "check_table_existence",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -256,
+        -768
+      ],
+      "id": "b38f78d3-e029-416a-b6de-6647b1ff5587",
+      "name": "setup_database"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "runwayml_batch_database",
+        "columns": {
+          "column": [
+            {
+              "name": "task_id"
+            },
+            {
+              "name": "task_created_at",
+              "type": "date"
+            },
+            {
+              "name": "status"
+            },
+            {
+              "name": "temp_download_url"
+            },
+            {
+              "name": "is_downloaded",
+              "type": "boolean"
+            },
+            {
+              "name": "is_upscaled",
+              "type": "boolean"
+            },
+            {
+              "name": "upscaled_url"
+            },
+            {
+              "name": "file_name"
+            },
+            {
+              "name": "original_prompt"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        -768
+      ],
+      "id": "a6508b55-6aa3-404d-b579-284b1801439b",
+      "name": "create_database"
+    },
+    {
+      "parameters": {
+        "content": "## Setup n8n Database (Data Table)\nNote: You can setup another database tools like Supabase or Postgres DB. \nJust change all the n8n Data Tables with your preferred database.",
+        "height": 336,
+        "width": 1040,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        -912
+      ],
+      "id": "6efe37dc-0c1a-431d-a170-3a13412faa6e",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Generate Prompts & Submit Generation Task\nThis workflow will generate prompts and then pipe it into RunwayML API",
+        "height": 464,
+        "width": 1744,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        -528
+      ],
+      "id": "275e9210-4da9-46f7-8997-42f748bf7aa2",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -272,
+        -416
+      ],
+      "id": "d78b5078-f239-4aee-ad6a-2277e8d26302",
+      "name": "chat_input",
+      "webhookId": "d27e3f31-356a-4aaf-9547-b2be0d841eb7"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -272,
+        -272
+      ],
+      "id": "1311aec3-03be-40c0-9449-82b13da07226",
+      "name": "scheduler"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        112,
+        -240
+      ],
+      "id": "1d63de47-8e50-4345-93a5-bfb10e9db669",
+      "name": "llm",
+      "credentials": {
+        "openRouterApi": {
+          "id": "Bl6urYQOWL9wudMm",
+          "name": "n8n-2026"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"prompts\": [\"prompt_1\", \"prompt_2\", \"prompt_3\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        256,
+        -240
+      ],
+      "id": "27a1e723-e063-4f36-a150-bf73ca20bd46",
+      "name": "parser"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.prompts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        464,
+        -416
+      ],
+      "id": "582287a2-640f-481c-b8da-802f5830a67d",
+      "name": "split"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "runwayml_batch_database",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "task_id": "={{ $json.id }}",
+            "is_downloaded": false
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "task_created_at",
+              "displayName": "task_created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "temp_download_url",
+              "displayName": "temp_download_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "is_downloaded",
+              "displayName": "is_downloaded",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "is_upscaled",
+              "displayName": "is_upscaled",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "upscaled_url",
+              "displayName": "upscaled_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1136,
+        -416
+      ],
+      "id": "0991b9ba-49e6-4bfe-bb16-cd74c8439891",
+      "name": "save_task_id"
+    },
+    {
+      "parameters": {
+        "content": "## Check, Download, & Upload to S3 Storage",
+        "height": 528,
+        "width": 2132,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        -16
+      ],
+      "id": "41e0e6c7-6fea-4fda-a3e8-fc8a0b885e21",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "playground",
+        "fileName": "=input/{{ $binary.data.fileName.toLowerCase() }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        96
+      ],
+      "id": "10786f9c-a2a1-4f52-acd3-0890d6d62f8c",
+      "name": "upload_to_s3",
+      "credentials": {
+        "s3": {
+          "id": "7rbk82L1JbRZxgkb",
+          "name": "r2_cloudflare"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "runwayml_batch_database",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "task_id",
+              "condition": "isNotEmpty"
+            },
+            {
+              "keyName": "is_downloaded",
+              "condition": "isTrue"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -32,
+        96
+      ],
+      "id": "a8c36083-565e-4650-a606-717639a9e2a5",
+      "name": "get_task_list"
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        192,
+        96
+      ],
+      "id": "b1b42e04-0852-429d-8b0c-fe3d385ed0ab",
+      "name": "loop"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "runwayml_batch_database",
+          "mode": "name"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "task_id",
+              "keyValue": "={{ $('get_output').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "is_downloaded": false,
+            "task_created_at": "={{ $('get_output').item.json.createdAt }}",
+            "status": "={{ $('get_output').item.json.status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "task_created_at",
+              "displayName": "task_created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "temp_download_url",
+              "displayName": "temp_download_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "is_downloaded",
+              "displayName": "is_downloaded",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "is_upscaled",
+              "displayName": "is_upscaled",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "upscaled_url",
+              "displayName": "upscaled_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        848,
+        256
+      ],
+      "id": "32f1ced2-62b7-40e5-b148-68305b0055d5",
+      "name": "update_status"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "runwayml_batch_database",
+          "mode": "name"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "task_id",
+              "keyValue": "={{ $('get_output').item.json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "is_downloaded": true,
+            "task_created_at": "={{ $('get_output').item.json.createdAt }}",
+            "status": "={{ $('get_output').item.json.status }}",
+            "temp_download_url": "={{ $('get_output').item.json.output[0] }}",
+            "file_name": "={{$('download_media').item.binary.data.fileName.toLowerCase()}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "task_created_at",
+              "displayName": "task_created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "temp_download_url",
+              "displayName": "temp_download_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "is_downloaded",
+              "displayName": "is_downloaded",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "is_upscaled",
+              "displayName": "is_upscaled",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "upscaled_url",
+              "displayName": "upscaled_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1504,
+        96
+      ],
+      "id": "973db063-e8fa-49c6-9910-0c96e0f30c4c",
+      "name": "mark_downloaded"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        688,
+        -416
+      ],
+      "id": "52716241-9f67-4c8a-aaa3-782cf17d30c4",
+      "name": "limit_dry_run",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -256,
+        96
+      ],
+      "id": "9a153c8d-7e8f-482b-a0cb-4687321eb5db",
+      "name": "check_and_execute"
+    },
+    {
+      "parameters": {
+        "content": "### Edit the RunwayML API Key",
+        "height": 256,
+        "width": 256,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        832,
+        -480
+      ],
+      "id": "3964db33-3370-4eae-b24c-2e0a5f675b7e",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7219ad16-ab8d-42e4-bfb3-f561f4f6c863",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "=SUCCEEDED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        96
+      ],
+      "id": "1cb50949-f5b6-4fab-8f1a-6ed584d3973c",
+      "name": "if_success"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1072,
+        256
+      ],
+      "id": "877db0db-355e-4d3d-b242-4cd324c0eafb",
+      "name": "wait_5s",
+      "webhookId": "2525ee9d-fb56-4eb3-acd3-7c453b54faa0"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        736
+      ],
+      "id": "178234de-d5f8-4b90-9f85-ce6b5766733c",
+      "name": "check_and_execute1"
+    },
+    {
+      "parameters": {
+        "content": "## Upscaling with Modal Infrastructure \nWill trigger Modal's (modal.com) deployed app to execute upscaling function, then upload it again into S3 (original low-res files will be deleted).\nSource code and info available on GitHub.",
+        "height": 560,
+        "width": 1744,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        560
+      ],
+      "id": "ca4d29ab-8953-45bc-afbb-bd5150613080",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "files",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        192,
+        736
+      ],
+      "id": "8046986d-4baa-497c-8ed4-7690f40e37e2",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "runwayml_batch_database",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "task_id",
+              "keyValue": "={{ $json.task_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "upscaled_url": "=https://pub-3b801dd9a16547b1a1d7a5b4b9c8ed1c.r2.dev/output/{{ $json.file_name }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "task_created_at",
+              "displayName": "task_created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "temp_download_url",
+              "displayName": "temp_download_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "is_downloaded",
+              "displayName": "is_downloaded",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "is_upscaled",
+              "displayName": "is_upscaled",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "upscaled_url",
+              "displayName": "upscaled_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1072,
+        752
+      ],
+      "id": "2d4ec6e7-4c84-430d-a163-3beffd338277",
+      "name": "set_public_url"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "runwayml_batch_database",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "file_name",
+              "condition": "ilike",
+              "keyValue": "={{ $json.files }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "is_upscaled": true
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "task_id",
+              "displayName": "task_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "task_created_at",
+              "displayName": "task_created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "temp_download_url",
+              "displayName": "temp_download_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "is_downloaded",
+              "displayName": "is_downloaded",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "is_upscaled",
+              "displayName": "is_upscaled",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "upscaled_url",
+              "displayName": "upscaled_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        752
+      ],
+      "id": "0f8ae8ce-6173-4e6e-ae20-10e23308ec72",
+      "name": "mark_upscaled"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "bucketName": "playground",
+        "returnAll": true,
+        "options": {
+          "folderKey": "output/"
+        }
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        192,
+        912
+      ],
+      "id": "2bb8f5b8-60a5-4eee-ab40-8bc5fd133de0",
+      "name": "Get many files",
+      "credentials": {
+        "s3": {
+          "id": "7rbk82L1JbRZxgkb",
+          "name": "r2_cloudflare"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "files",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        560,
+        752
+      ],
+      "id": "8c06e5a7-1a0f-4c8c-a964-790215557686",
+      "name": "Merge"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -16,
+        912
+      ],
+      "id": "28a878bd-808f-4247-a294-618191362340",
+      "name": "Wait",
+      "webhookId": "5b3b6ef5-869e-4adb-94c7-f30e1a2700db"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "743d50ee-5d0a-417a-805d-dcea0e21b531",
+              "name": "files",
+              "value": "={{ $json.Key.replaceAll('output/','') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        912
+      ],
+      "id": "3941db71-7497-4a18-8ea9-c3d38664b75b",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "content": "### Optional, add public url",
+        "height": 272,
+        "width": 256,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        992,
+        672
+      ],
+      "id": "9986d2db-b2b4-4e04-8345-396aa0bff432",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "get_output": {
+      "main": [
+        [
+          {
+            "node": "if_success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "split",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "request_runway": {
+      "main": [
+        [
+          {
+            "node": "save_task_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "download_media": {
+      "main": [
+        [
+          {
+            "node": "upload_to_s3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split_urls": {
+      "main": [
+        [
+          {
+            "node": "download_media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "trigger_modal": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "manual_text": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_exist": {
+      "main": [
+        [],
+        [
+          {
+            "node": "create_database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_table_existence": {
+      "main": [
+        [
+          {
+            "node": "if_exist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "setup_database": {
+      "main": [
+        [
+          {
+            "node": "check_table_existence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_database": {
+      "main": [
+        []
+      ]
+    },
+    "chat_input": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "scheduler": {
+      "main": [
+        [
+          {
+            "node": "manual_text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "llm": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split": {
+      "main": [
+        [
+          {
+            "node": "limit_dry_run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upload_to_s3": {
+      "main": [
+        [
+          {
+            "node": "mark_downloaded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_task_list": {
+      "main": [
+        [
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop": {
+      "main": [
+        [],
+        [
+          {
+            "node": "get_output",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update_status": {
+      "main": [
+        [
+          {
+            "node": "wait_5s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "limit_dry_run": {
+      "main": [
+        [
+          {
+            "node": "request_runway",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_and_execute": {
+      "main": [
+        [
+          {
+            "node": "get_task_list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_success": {
+      "main": [
+        [
+          {
+            "node": "split_urls",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "update_status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "wait_5s": {
+      "main": [
+        [
+          {
+            "node": "get_output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_and_execute1": {
+      "main": [
+        [
+          {
+            "node": "trigger_modal",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mark_downloaded": {
+      "main": [
+        []
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many files": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get many files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "mark_upscaled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mark_upscaled": {
+      "main": [
+        [
+          {
+            "node": "set_public_url",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9c3fe452-60bb-4032-a438-0bf1485e1e01",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "835a133d5d475969412c85a0570064ea4dfab9aa628008ff334bb649bc9cfc16"
+  },
+  "id": "njU3QZCET3p2LJxE",
+  "tags": []
+}
