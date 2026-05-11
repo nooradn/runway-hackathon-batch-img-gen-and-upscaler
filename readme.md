@@ -25,6 +25,7 @@ python -m pip install modal boto3 tqdm opencv-python fastapi
 ```
 
 3. Configure credentials using environment variables or secret manager.
+4. Deploy and execute the setups. See more at [this YouTube walkthrough](https://www.youtube.com/watch?v=YauKJraKOWM).
 
 ### Required placeholders
 
