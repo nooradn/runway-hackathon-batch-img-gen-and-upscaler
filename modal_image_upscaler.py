@@ -90,19 +90,19 @@ def upscale_image_worker(filename: str) -> dict:
             text=True,
         )
 
-        # Find the resulting file (usually adds _out suffix on local disk)
+        # Cari file hasil (biasanya nambahin suffix _out di disk lokal)
         produced = glob.glob(os.path.join(local_out_dir, "*"))
         if not produced:
             raise FileNotFoundError("Upscale failed.")
 
         local_output_path = produced[0]
-        # Use the original filename for the R2 key (without the _out suffix)
+        # Kita pakai ORIGINAL filename untuk key di R2 (Tanpa suffix _out)
         output_key = f"{OUTPUT_PREFIX}{filename}"
 
         print(f"[↑] Uploading high-res asset: {filename}")
         r2.upload_file(local_output_path, BUCKET_NAME, output_key)
 
-        # Mission successful? Delete the original input from the R2 input folder
+        # Misi Sukses? Hapus file original di folder input R2
         print(f"[✂] Cleaning up original input: {filename}")
         r2.delete_object(Bucket=BUCKET_NAME, Key=input_key)
 

@@ -10,7 +10,6 @@ A lightweight RunwayML image generation and upscaling pipeline built with `n8n` 
 
 - `n8n_runwayml_workflow.json` — workflow definition for generating prompts, submitting RunwayML image generation jobs, downloading media, and triggering an image upscaler.
 - `modal_image_upscaler.py` — Modal application that upscales images from Cloudflare R2 and writes results back to R2.
-- `src/images/` — image assets or generated test content.
 
 ## Key Features
 
