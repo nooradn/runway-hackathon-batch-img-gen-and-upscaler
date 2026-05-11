@@ -1,10 +1,6 @@
 # Runway API Hackathon
 
-A lightweight RunwayML image generation and upscaling pipeline built with `n8n` and `Modal`.
-
-![Architecture infographic](docs/architecture-placeholder.png)
-
-> Replace the placeholder image with an actual diagram showing the flow from prompt generation, RunwayML API request, media download, and Modal R2 upscaling.
+A batch RunwayML image generation and upscaling workflow pipeline built with `n8n` and `Modal`.
 
 ## Project Overview
 

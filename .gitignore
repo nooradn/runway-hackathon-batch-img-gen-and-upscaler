@@ -55,3 +55,7 @@ tmp/
 
 # Notebook
 .ipynb_checkpoints/
+
+
+# Outputs
+output/

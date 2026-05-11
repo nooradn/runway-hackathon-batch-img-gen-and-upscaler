@@ -532,7 +532,7 @@
             },
             {
               "keyName": "is_downloaded",
-              "condition": "isTrue"
+              "condition": "isFalse"
             }
           ]
         }
